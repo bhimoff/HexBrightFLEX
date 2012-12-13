@@ -106,7 +106,7 @@ void loop()
   {
   case MODE_BLINKING:
   case MODE_BLINKING_PREVIEW:
-    digitalWrite(DPIN_DRV_EN, (time%300)<75);
+    digitalWrite(DPIN_DRV_EN, (time%200)<25);
     break;
   }
   
