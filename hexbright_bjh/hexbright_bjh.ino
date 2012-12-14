@@ -60,9 +60,7 @@ void setup()
 
 void loop()
 {
-  static unsigned long lastDazzleTime;
-  static unsigned long lastTempTime;
-  static unsigned long lastModeTime;
+  static unsigned long lastDazzleTime, lastTempTime, lastModeTime;
   unsigned long time = millis();
   
   // Check the state of the charge controller
