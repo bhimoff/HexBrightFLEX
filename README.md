@@ -1,5 +1,13 @@
-HexBright Demo Code 
+Brandon Himoff's HexBright Mod
 =======================
+
+hexbright_bjh
+-----------------
+This firmware has a lower low, makes it so that after five seconds you go from 
+low or medium to off, and uses dazzle instead of blink.  More to come.
+
+
+These below are from the original:
 
 hexbright_factory
 -----------------
