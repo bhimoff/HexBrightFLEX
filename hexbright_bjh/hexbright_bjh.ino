@@ -21,9 +21,10 @@
 // Modes
 #define MODE_OFF                0
 #define MODE_LOW                1
-#define MODE_HIGH               2
-#define MODE_BLINKING           3
-#define MODE_BLINKING_PREVIEW   4
+#define MODE_MED                2
+#define MODE_HIGH               3
+#define MODE_DAZZLE             4
+#define MODE_DAZZLE_PREVIEW     5
 
 // State
 byte mode = 0;
@@ -59,7 +60,9 @@ void setup()
 
 void loop()
 {
+  static unsigned long lastDazzleTime;
   static unsigned long lastTempTime;
+  static unsigned long lastModeTime;
   unsigned long time = millis();
   
   // Check the state of the charge controller
@@ -104,9 +107,14 @@ void loop()
   // Do whatever this mode does
   switch (mode)
   {
-  case MODE_BLINKING:
-  case MODE_BLINKING_PREVIEW:
-    digitalWrite(DPIN_DRV_EN, (time%200)<25);
+  case MODE_DAZZLE:
+  case MODE_DAZZLE_PREVIEW:
+    //digitalWrite(DPIN_DRV_EN, (time%200)<25);
+    if (millis() - lastDazzleTime > 10)
+    {
+      digitalWrite(DPIN_DRV_EN, random(4)<1);
+      lastDazzleTime = millis();
+    }    
     break;
   }
   
@@ -124,22 +132,30 @@ void loop()
     if (btnDown && !newBtnDown && (time-btnTime)>20)
       newMode = MODE_LOW;
     if (btnDown && newBtnDown && (time-btnTime)>500)
-      newMode = MODE_BLINKING_PREVIEW;
+      newMode = MODE_DAZZLE_PREVIEW;
     break;
   case MODE_LOW:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
-      newMode = MODE_HIGH;
+      if (millis()-lastModeTime > 5000) {
+        newMode = MODE_OFF;
+      } else newMode = MODE_MED;
+    break;
+  case MODE_MED:
+    if (btnDown && !newBtnDown && (time-btnTime)>50)
+      if (millis()-lastModeTime > 5000) {
+        newMode = MODE_OFF;
+      } else newMode = MODE_HIGH;
     break;
   case MODE_HIGH:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
       newMode = MODE_OFF;
     break;
-  case MODE_BLINKING_PREVIEW:
+  case MODE_DAZZLE_PREVIEW:
     // This mode exists just to ignore this button release.
     if (btnDown && !newBtnDown)
-      newMode = MODE_BLINKING;
+      newMode = MODE_DAZZLE;
     break;
-  case MODE_BLINKING:
+  case MODE_DAZZLE:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
       newMode = MODE_OFF;
     break;
@@ -148,6 +164,7 @@ void loop()
   // Do the mode transitions
   if (newMode != mode)
   {
+    lastModeTime = millis();
     switch (newMode)
     {
     case MODE_OFF:
@@ -162,7 +179,14 @@ void loop()
       pinMode(DPIN_PWR, OUTPUT);
       digitalWrite(DPIN_PWR, HIGH);
       digitalWrite(DPIN_DRV_MODE, LOW);
-      analogWrite(DPIN_DRV_EN, 64);
+      analogWrite(DPIN_DRV_EN, 32);
+      break;
+    case MODE_MED:
+      Serial.println("Mode = medium");
+      pinMode(DPIN_PWR, OUTPUT);
+      digitalWrite(DPIN_PWR, HIGH);
+      digitalWrite(DPIN_DRV_MODE, LOW);
+      analogWrite(DPIN_DRV_EN, 255);
       break;
     case MODE_HIGH:
       Serial.println("Mode = high");
@@ -171,9 +195,9 @@ void loop()
       digitalWrite(DPIN_DRV_MODE, HIGH);
       analogWrite(DPIN_DRV_EN, 255);
       break;
-    case MODE_BLINKING:
-    case MODE_BLINKING_PREVIEW:
-      Serial.println("Mode = blinking");
+    case MODE_DAZZLE:
+    case MODE_DAZZLE_PREVIEW:
+      Serial.println("Mode = dazzle");
       pinMode(DPIN_PWR, OUTPUT);
       digitalWrite(DPIN_PWR, HIGH);
       digitalWrite(DPIN_DRV_MODE, HIGH);
