@@ -165,10 +165,10 @@ void loop()
   case MODE_DAZZLE:
   case MODE_DAZZLE_PREVIEW:
     //digitalWrite(DPIN_DRV_EN, (time%200)<25);
-    if (millis() - lastDazzleTime > 10)
+    if (time - lastDazzleTime > 10)
     {
       digitalWrite(DPIN_DRV_EN, random(4)<1);
-      lastDazzleTime = millis();
+      lastDazzleTime = time;
     }    
     break;
   }
@@ -191,13 +191,13 @@ void loop()
     break;
   case MODE_LOW:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
-      if (millis()-lastModeTime > 5000) {
+      if (time-lastModeTime > 5000) {
         newMode = MODE_OFF;
       } else newMode = MODE_MED;
     break;
   case MODE_MED:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
-      if (millis()-lastModeTime > 5000) {
+      if (time-lastModeTime > 5000) {
         newMode = MODE_OFF;
       } else newMode = MODE_HIGH;
     break;
@@ -215,7 +215,12 @@ void loop()
       newMode = MODE_OFF;
     break;
   }
-
+  
+  //activity power down
+  if (time-max(lastAccTime,lastModeTime) > 1800000UL) { //30 minutes
+    newMode = MODE_OFF;
+  }
+  
   // Do the mode transitions
   if (newMode != mode)
   {
