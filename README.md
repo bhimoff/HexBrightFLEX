@@ -3,8 +3,13 @@ Brandon Himoff's HexBright Mod
 
 hexbright_bjh
 -----------------
-This firmware has a lower low, makes it so that after five seconds you go from 
-low or medium to off, and uses dazzle instead of blink.  More to come.
+This firmware has: 
+* a lower low
+* makes it so that after five seconds you go from low or medium directly to off 
+* uses dazzle instead of blink
+*uses the accelerometer to power down after 30 minutes to save battery
+
+More to come.
 
 
 These below are from the original:
