@@ -72,18 +72,12 @@ void setup()
     ACC_REG_INTS,  // First register (see next line)
     0xE4,  // Interrupts: shakes, taps
     0x00,  // Mode: not enabled yet
-    0x00,  // Sample rate: 120 Hz
+    0x00,  // Sample rate: 120 Hz active
     0x0F,  // Tap threshold
     0x10   // Tap debounce samples
   };
   Wire.beginTransmission(ACC_ADDRESS);
   Wire.write(config, sizeof(config));
-  Wire.endTransmission();
-
-  // Enable accelerometer
-  byte enable[] = {ACC_REG_MODE, 0x01};  // Mode: active!
-  Wire.beginTransmission(ACC_ADDRESS);
-  Wire.write(enable, sizeof(enable));
   Wire.endTransmission();
   
   btnTime = millis();
@@ -217,7 +211,7 @@ void loop()
   }
   
   //activity power down
-  if (time-max(lastAccTime,lastModeTime) > 1800000UL) { //30 minutes
+  if (time-max(lastAccTime,lastModeTime) > 600000UL) { //10 minutes
     newMode = MODE_OFF;
   }
   
@@ -225,6 +219,16 @@ void loop()
   if (newMode != mode)
   {
     lastModeTime = millis();
+ 
+    // Enable or Disable accelerometer
+    byte disable[] = {ACC_REG_MODE, 0x00};  // Mode: standby!
+    byte enable[] = {ACC_REG_MODE, 0x01};  // Mode: active!
+    Wire.beginTransmission(ACC_ADDRESS);
+    if (newMode == MODE_OFF) {
+      Wire.write(disable, sizeof(disable));
+    } else Wire.write(enable, sizeof(enable));
+    Wire.endTransmission();
+
     switch (newMode)
     {
     case MODE_OFF:
