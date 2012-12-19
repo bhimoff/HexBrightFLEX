@@ -12,14 +12,14 @@
   the known frequencies for vertigo (about 5 to 20Hz):
   http://en.wikipedia.org/wiki/Flicker_vertigo
   Cherry pick SOS from https://github.com/jaebird/samples.git
-  * Added SOS to dazzle mode. To get there: press and hold pwr button to get dazzle, then long press button again for SOS
+  * Added SOS to dazzle mode. To get there: press and hold pwr button to get dazzle, then 2 second long press again for SOS
 */
 
 #include <math.h>
 #include <Wire.h>
 
 // Settings
-#define OVERTEMP                340 //~1.1V = 60°C = 140°F
+#define OVERTEMP                340 //~1.1V = 60ï¿½C = 140ï¿½F
 
 // Accelerometer defines
 #define ACC_ADDRESS             0x4C
@@ -53,6 +53,7 @@
 #define MODE_DAZZLE             4
 #define MODE_DAZZLE_PREVIEW     5
 #define MODE_SOS                6
+#define MODE_SOS_PREVIEW        7
 
 #define MODE_SOS_S              0
 #define MODE_SOS_O              1
@@ -277,14 +278,20 @@ void loop()
       newMode = MODE_DAZZLE;
     break;
   case MODE_DAZZLE:
-    if (btnDown && !newBtnDown && (time-btnTime)>50) {
-      newMode = MODE_SOS;
+    if (btnDown && !newBtnDown && (time-btnTime)>50)
+      newMode = MODE_OFF;
+    if (btnDown && newBtnDown && (time-btnTime)>2000) //full 2 second press
+    {
+      newMode = MODE_SOS_PREVIEW;
       sos_mode = MODE_SOS_S;
       // reset ditdah to 1, 1 based due to use of modulo
       ditdah = 1;
     }
-    if (btnDown && !newBtnDown && (time-btnTime)>500)
-      newMode = MODE_OFF;           
+    break;
+  case MODE_SOS_PREVIEW:
+    // This mode exists just to ignore this button release.
+    if (btnDown && !newBtnDown)
+      newMode = MODE_SOS;
     break;
   case MODE_SOS:    
     if (btnDown && !newBtnDown && (time-btnTime)>50)
@@ -349,6 +356,7 @@ void loop()
       digitalWrite(DPIN_DRV_MODE, HIGH);
       break;
     case MODE_SOS:
+    case MODE_SOS_PREVIEW:
       Serial.println("Mode = SOS");
       pinMode(DPIN_PWR, OUTPUT);
       digitalWrite(DPIN_PWR, HIGH);
