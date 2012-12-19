@@ -11,6 +11,8 @@
   - Changed the way dazzle works and set flicker rate to match
   the known frequencies for vertigo (about 5 to 20Hz):
   http://en.wikipedia.org/wiki/Flicker_vertigo
+  Cherry pick SOS from https://github.com/jaebird/samples.git
+  * Added SOS to dazzle mode. To get there: press and hold pwr button to get dazzle, then long press button again for SOS
 */
 
 #include <math.h>
@@ -50,9 +52,15 @@
 #define MODE_HIGH               3
 #define MODE_DAZZLE             4
 #define MODE_DAZZLE_PREVIEW     5
+#define MODE_SOS                6
+
+#define MODE_SOS_S              0
+#define MODE_SOS_O              1
+#define MODE_SOS_S_             2
 
 // State
 byte mode = 0;
+byte sos_mode = 0;
 unsigned long btnTime = 0;
 boolean btnDown = false;
 boolean dazzle_on = true;
@@ -103,7 +111,10 @@ void setup()
 
 void loop()
 {
-  static unsigned long lastDazzleTime, lastTempTime, lastModeTime, lastAccTime;
+  static unsigned long lastDazzleTime, lastTempTime, lastModeTime, lastAccTime, lastModeSOSTime;
+  static unsigned long ditdah;
+  static int ledState = LOW;
+  
   unsigned long time = millis();
   
   // Check the state of the charge controller
@@ -180,6 +191,52 @@ void loop()
       dazzle_period = random(25,100);
     }    
     break;
+  case MODE_SOS:
+    // 200 ms is the frame for each dit "on", the larger this number the slower the SOS
+    if (time-lastModeSOSTime > 200) {
+      lastModeSOSTime = time;   
+      switch (sos_mode)
+      {     
+      case MODE_SOS_S:
+        if (ditdah <= 6) {
+          ledState = (ledState == LOW) ? ledState = HIGH : ledState = LOW;
+          ditdah++;
+        }
+        else {
+          ditdah = 1;
+          sos_mode = MODE_SOS_O;
+        }
+        break;
+      case MODE_SOS_O:
+        if (ditdah <= 12) {        
+          if (ledState == LOW)
+            ledState = HIGH;
+          else if (ditdah % 4 == 0)
+            ledState = LOW;
+          ditdah++;
+        }
+        else {
+          ditdah = 1;
+          sos_mode = MODE_SOS_S_;
+        }
+        break;
+      case MODE_SOS_S_:
+        if (ditdah <= 6) {
+          ledState = (ledState == LOW) ? ledState = HIGH : ledState = LOW;
+          ditdah++;
+        }
+        else if (ditdah < 10)
+          ditdah++;
+        else {
+          ditdah = 1;
+          sos_mode = MODE_SOS_S;
+        }
+        break;      
+      }
+      
+      digitalWrite(DPIN_DRV_EN, ledState);
+    }
+    break;
   }
   
   // Periodically pull down the button's pin, since
@@ -220,6 +277,16 @@ void loop()
       newMode = MODE_DAZZLE;
     break;
   case MODE_DAZZLE:
+    if (btnDown && !newBtnDown && (time-btnTime)>50) {
+      newMode = MODE_SOS;
+      sos_mode = MODE_SOS_S;
+      // reset ditdah to 1, 1 based due to use of modulo
+      ditdah = 1;
+    }
+    if (btnDown && !newBtnDown && (time-btnTime)>500)
+      newMode = MODE_OFF;           
+    break;
+  case MODE_SOS:    
     if (btnDown && !newBtnDown && (time-btnTime)>50)
       newMode = MODE_OFF;
     break;
@@ -281,6 +348,12 @@ void loop()
       digitalWrite(DPIN_PWR, HIGH);
       digitalWrite(DPIN_DRV_MODE, HIGH);
       break;
+    case MODE_SOS:
+      Serial.println("Mode = SOS");
+      pinMode(DPIN_PWR, OUTPUT);
+      digitalWrite(DPIN_PWR, HIGH);
+      digitalWrite(DPIN_DRV_MODE, HIGH);
+      break;
     }
 
     mode = newMode;
@@ -324,4 +397,3 @@ float readAccelAngleXZ()
   readAccel(acc);
   return atan2(acc[0], acc[2]);
 }
-
