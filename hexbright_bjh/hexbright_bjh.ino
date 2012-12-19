@@ -1,16 +1,25 @@
 /* 
-
-  Brandon Himoff firmware for HexBright FLEX 
-  v2.4  Dec 6, 2012
+  HexBright Basic Code - High/Med/Low/Dazzle
   
+  Based on:
+  Factory firmware for HexBright FLEX 
+  v2.4  Dec 6, 2012
+  https://github.com/hexbright/samples
+  
+  Cherry picked dazzle improvements from 
+  https://github.com/digitalmisery/HexBrightFLEX:
+  - Changed the way dazzle works and set flicker rate to match
+  the known frequencies for vertigo (about 5 to 20Hz):
+  http://en.wikipedia.org/wiki/Flicker_vertigo
 */
 
 #include <math.h>
 #include <Wire.h>
 
 // Settings
-#define OVERTEMP                340
-// Constants
+#define OVERTEMP                340 //~1.1V = 60°C = 140°F
+
+// Accelerometer defines
 #define ACC_ADDRESS             0x4C
 #define ACC_REG_XOUT            0
 #define ACC_REG_YOUT            1
@@ -18,19 +27,22 @@
 #define ACC_REG_TILT            3
 #define ACC_REG_INTS            6
 #define ACC_REG_MODE            7
+
 // Pin assignments
-#define DPIN_RLED_SW            2
-#define DPIN_GLED               5
-#define DPIN_PGOOD              7
-#define DPIN_PWR                8
-#define DPIN_DRV_MODE           9
-#define DPIN_DRV_EN             10
-#define DPIN_ACC_INT            3
-#define APIN_TEMP               0
-#define APIN_CHARGE             3
+#define DPIN_RLED_SW            2 //PD2, INT0, MLF PIN 28
+#define DPIN_ACC_INT            3 //PD3, INT1, MLF PIN 1
+#define DPIN_GLED               5 //PD5, OC0B, MLF PIN 7
+#define DPIN_PGOOD              7 //PD7, MLF PIN 9
+#define DPIN_PWR                8 //PB0, MLF PIN 10
+#define DPIN_DRV_MODE           9 //PB1, OC1A, MLF PIN 11
+#define DPIN_DRV_EN             10 //PB2, OC1B, MLF PIN 12
+#define APIN_TEMP               0 //PC0, ADC0, MLF PIN 19
+#define APIN_CHARGE             3 //PC3, ADC3, MLF PIN 22
+
 // Interrupts
 #define INT_SW                  0
 #define INT_ACC                 1
+
 // Modes
 #define MODE_OFF                0
 #define MODE_LOW                1
@@ -43,7 +55,8 @@
 byte mode = 0;
 unsigned long btnTime = 0;
 boolean btnDown = false;
-
+boolean dazzle_on = true;
+long dazzle_period = 100;
 
 void setup()
 {
@@ -66,7 +79,7 @@ void setup()
   // Initialize serial busses
   Serial.begin(9600);
   Wire.begin();
-
+  
   // Configure accelerometer
   byte config[] = {
     ACC_REG_INTS,  // First register (see next line)
@@ -85,6 +98,7 @@ void setup()
   mode = MODE_OFF;
 
   Serial.println("Powered up!");
+  randomSeed(analogRead(1));
 }
 
 void loop()
@@ -152,17 +166,18 @@ void loop()
       if (shaked) Serial.println("Shake!");
     }
   }
-
+  
   // Do whatever this mode does
   switch (mode)
   {
   case MODE_DAZZLE:
   case MODE_DAZZLE_PREVIEW:
-    //digitalWrite(DPIN_DRV_EN, (time%200)<25);
-    if (time - lastDazzleTime > 10)
+    if (time - lastDazzleTime > dazzle_period)
     {
-      digitalWrite(DPIN_DRV_EN, random(4)<1);
+      digitalWrite(DPIN_DRV_EN, dazzle_on);
+      dazzle_on = !dazzle_on;
       lastDazzleTime = time;
+      dazzle_period = random(25,100);
     }    
     break;
   }
@@ -185,15 +200,15 @@ void loop()
     break;
   case MODE_LOW:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
-      if (time-lastModeTime > 5000) {
+      if (time-lastModeTime > 1000)
         newMode = MODE_OFF;
-      } else newMode = MODE_MED;
+      else newMode = MODE_MED;
     break;
   case MODE_MED:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
-      if (time-lastModeTime > 5000) {
+      if (time-lastModeTime > 1000)
         newMode = MODE_OFF;
-      } else newMode = MODE_HIGH;
+      else newMode = MODE_HIGH;
     break;
   case MODE_HIGH:
     if (btnDown && !newBtnDown && (time-btnTime)>50)
@@ -214,7 +229,7 @@ void loop()
   if (time-max(lastAccTime,lastModeTime) > 600000UL) { //10 minutes
     newMode = MODE_OFF;
   }
-  
+
   // Do the mode transitions
   if (newMode != mode)
   {
