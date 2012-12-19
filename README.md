@@ -8,6 +8,8 @@ This firmware has:
 * makes it so that after five seconds you go from low or medium directly to off 
 * uses dazzle instead of blink
 * cherry picked the improved dazzle from https://github.com/digitalmisery/HexBrightFLEX
+* cherry picked the SOS mode from hhttps://github.com/jaebird/samples.git
+* required a 2 second press from dazzle to get to SOS
 * uses the accelerometer to power down after 10 minutes motioneless to save battery
 
 More to come.
