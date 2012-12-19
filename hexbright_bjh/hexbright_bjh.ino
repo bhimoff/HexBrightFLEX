@@ -55,13 +55,8 @@
 #define MODE_SOS                6
 #define MODE_SOS_PREVIEW        7
 
-#define MODE_SOS_S              0
-#define MODE_SOS_O              1
-#define MODE_SOS_S_             2
-
 // State
 byte mode = 0;
-byte sos_mode = 0;
 unsigned long btnTime = 0;
 boolean btnDown = false;
 boolean dazzle_on = true;
@@ -193,50 +188,8 @@ void loop()
     }    
     break;
   case MODE_SOS:
-    // 200 ms is the frame for each dit "on", the larger this number the slower the SOS
-    if (time-lastModeSOSTime > 200) {
-      lastModeSOSTime = time;   
-      switch (sos_mode)
-      {     
-      case MODE_SOS_S:
-        if (ditdah <= 6) {
-          ledState = (ledState == LOW) ? ledState = HIGH : ledState = LOW;
-          ditdah++;
-        }
-        else {
-          ditdah = 1;
-          sos_mode = MODE_SOS_O;
-        }
-        break;
-      case MODE_SOS_O:
-        if (ditdah <= 12) {        
-          if (ledState == LOW)
-            ledState = HIGH;
-          else if (ditdah % 4 == 0)
-            ledState = LOW;
-          ditdah++;
-        }
-        else {
-          ditdah = 1;
-          sos_mode = MODE_SOS_S_;
-        }
-        break;
-      case MODE_SOS_S_:
-        if (ditdah <= 6) {
-          ledState = (ledState == LOW) ? ledState = HIGH : ledState = LOW;
-          ditdah++;
-        }
-        else if (ditdah < 10)
-          ditdah++;
-        else {
-          ditdah = 1;
-          sos_mode = MODE_SOS_S;
-        }
-        break;      
-      }
-      
-      digitalWrite(DPIN_DRV_EN, ledState);
-    }
+  case MODE_SOS_PREVIEW:
+    digitalWrite(DPIN_DRV_EN, morseCodeSOS(time - lastModeSOSTime));
     break;
   }
   
@@ -281,12 +234,7 @@ void loop()
     if (btnDown && !newBtnDown && (time-btnTime)>50)
       newMode = MODE_OFF;
     if (btnDown && newBtnDown && (time-btnTime)>2000) //full 2 second press
-    {
-      newMode = MODE_SOS_PREVIEW;
-      sos_mode = MODE_SOS_S;
-      // reset ditdah to 1, 1 based due to use of modulo
-      ditdah = 1;
-    }
+       newMode = MODE_SOS_PREVIEW;
     break;
   case MODE_SOS_PREVIEW:
     // This mode exists just to ignore this button release.
@@ -361,6 +309,7 @@ void loop()
       pinMode(DPIN_PWR, OUTPUT);
       digitalWrite(DPIN_PWR, HIGH);
       digitalWrite(DPIN_DRV_MODE, HIGH);
+      lastModeSOSTime = time;
       break;
     }
 
@@ -404,4 +353,39 @@ float readAccelAngleXZ()
   char acc[3];
   readAccel(acc);
   return atan2(acc[0], acc[2]);
+}
+
+bool morseCodeSOS(unsigned long time){
+  const unsigned long dit = 200; 
+  // 200 ms is the frame for each dit "on", the larger this number the slower the SOS
+
+  // word space = 7 dits duration
+  // S = 11 dits duration
+  // char space = 3 dits duration
+  // O = 5 dits duration
+  // char space = 3 dits duration
+  // S = 11 dits duration
+  // total duration = 40
+  
+  byte step = (time / dit) % 40; //dit number modulo the length of the sequence;
+  // Start with word space
+  if (step < 7) return false;
+  step -= 7;
+  // First S
+  if (step < 11) return (step % 4) != 3; // every fourth dit is off
+  step -= 11;
+  // Char space
+  if (step < 3) return false;
+  step -= 3;
+  // O
+  if (step < 5) return (step % 2) == 0; // every second dit is off
+  step -= 5;
+  // Char space
+  if (step < 3) return false;
+  step -= 3;
+   // First S
+  if (step < 11) return (step % 4) != 3; // every fourth dit is off
+  // Should never get here
+  Serial.println("Morse SOS overrun error");  
+  return false;
 }
