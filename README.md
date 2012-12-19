@@ -7,7 +7,7 @@ This firmware has:
 * a lower low
 * makes it so that after five seconds you go from low or medium directly to off 
 * uses dazzle instead of blink
-* uses the accelerometer to power down after 30 minutes to save battery
+* uses the accelerometer to power down after 10 minutes motioneless to save battery
 
 More to come.
 
