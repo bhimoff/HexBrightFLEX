@@ -325,36 +325,6 @@ void loop()
   }
 }
 
-void readAccel(char *acc)
-{
-  while (1)
-  {
-    Wire.beginTransmission(ACC_ADDRESS);
-    Wire.write(ACC_REG_XOUT);
-    Wire.endTransmission(false);       // End, but do not stop!
-    Wire.requestFrom(ACC_ADDRESS, 3);  // This one stops.
-
-    for (int i = 0; i < 3; i++)
-    {
-      if (!Wire.available())
-        continue;
-      acc[i] = Wire.read();
-      if (acc[i] & 0x40)  // Indicates failed read; redo!
-        continue;
-      if (acc[i] & 0x20)  // Sign-extend
-        acc[i] |= 0xC0;
-    }
-    break;
-  }
-}
-
-float readAccelAngleXZ()
-{
-  char acc[3];
-  readAccel(acc);
-  return atan2(acc[0], acc[2]);
-}
-
 bool morseCodeSOS(unsigned long time){
   const unsigned long dit = 200; 
   // 200 ms is the frame for each dit "on", the larger this number the slower the SOS
