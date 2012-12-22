@@ -107,7 +107,7 @@ void setup()
 
 void loop()
 {
-  static unsigned long lastDazzleTime, lastTempTime, lastModeTime, lastAccTime, lastModeSOSTime;
+  static unsigned long lastDazzleTime, lastTempTime, lastModeTime, lastAccTime;
   static unsigned long ditdah;
   static int ledState = LOW;
   
@@ -189,7 +189,7 @@ void loop()
     break;
   case MODE_SOS:
   case MODE_SOS_PREVIEW:
-    digitalWrite(DPIN_DRV_EN, morseCodeSOS(time - lastModeSOSTime));
+    digitalWrite(DPIN_DRV_EN, morseCodeSOS(time - lastModeTime));
     break;
   }
   
@@ -247,8 +247,8 @@ void loop()
     break;
   }
   
-  //activity power down
-  if (time-max(lastAccTime,lastModeTime) > 600000UL) { //10 minutes
+  //activity power down EXCLUDES SOS MODE!
+  if (time-max(lastAccTime,lastModeTime) > 600000UL && newMode != MODE_SOS) { //10 minutes
     newMode = MODE_OFF;
   }
 
@@ -309,7 +309,6 @@ void loop()
       pinMode(DPIN_PWR, OUTPUT);
       digitalWrite(DPIN_PWR, HIGH);
       digitalWrite(DPIN_DRV_MODE, HIGH);
-      lastModeSOSTime = time;
       break;
     }
 
