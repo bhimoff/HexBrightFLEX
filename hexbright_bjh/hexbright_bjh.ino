@@ -19,7 +19,7 @@
 #include <Wire.h>
 
 // Settings
-#define OVERTEMP                340 //~1.1V = 60�C = 140�F
+#define OVERTEMP                340 //~1.1V = 60C = 140F
 
 // Accelerometer defines
 #define ACC_ADDRESS             0x4C
@@ -325,35 +325,39 @@ void loop()
 }
 
 bool morseCodeSOS(unsigned long time){
-  const unsigned long dit = 200; 
-  // 200 ms is the frame for each dit "on", the larger this number the slower the SOS
+  const unsigned long dit = 180; 
+  // 180 ms is the frame for each dit "on", the larger this number the slower the SOS
 
-  // word space = 7 dits duration
-  // S = 11 dits duration
-  // char space = 3 dits duration
-  // O = 5 dits duration
-  // char space = 3 dits duration
-  // S = 11 dits duration
-  // total duration = 40
+  // Morse Code:  (thanks jaebird!)
+  // S = ...  O = ---
+  // SOS word = ...---...
   
-  byte step = (time / dit) % 40; //dit number modulo the length of the sequence;
+  // word space = 7 dits duration
+  // S = 5 dits duration
+  // char space = 3 dits duration
+  // O = 11 dits duration
+  // char space = 3 dits duration
+  // S = 5 dits duration
+  // total duration = 34
+  
+  byte step = (time / dit) % 34; //dit number modulo the length of the sequence;
   // Start with word space
   if (step < 7) return false;
   step -= 7;
   // First S
-  if (step < 11) return (step % 4) != 3; // every fourth dit is off
-  step -= 11;
-  // Char space
-  if (step < 3) return false;
-  step -= 3;
-  // O
   if (step < 5) return (step % 2) == 0; // every second dit is off
   step -= 5;
   // Char space
   if (step < 3) return false;
   step -= 3;
-   // First S
+  // O
   if (step < 11) return (step % 4) != 3; // every fourth dit is off
+  step -= 11;
+  // Char space
+  if (step < 3) return false;
+  step -= 3;
+   // Last S
+  if (step < 5) return (step % 2) == 0; // every second dit is off
   // Should never get here
   Serial.println("Morse SOS overrun error");  
   return false;
