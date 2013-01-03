@@ -9,7 +9,7 @@
   Cherry picked dazzle improvements from 
   https://github.com/digitalmisery/HexBrightFLEX:
   - Changed the way dazzle works and set flicker rate to match
-  the known frequencies for vertigo (about 5 to 20Hz):
+  the known frequencies for vertigo (about 5 to 20Hz): (now 10 to 20Hz, seems more effective)
   http://en.wikipedia.org/wiki/Flicker_vertigo
   Cherry pick SOS from https://github.com/jaebird/samples.git
   * Added SOS to dazzle mode. To get there: press and hold pwr button to get dazzle, then 2 second long press again for SOS
@@ -184,7 +184,7 @@ void loop()
       digitalWrite(DPIN_DRV_EN, dazzle_on);
       dazzle_on = !dazzle_on;
       lastDazzleTime = time;
-      dazzle_period = random(25,100);
+      dazzle_period = random(25,50);
     }    
     break;
   case MODE_SOS:
